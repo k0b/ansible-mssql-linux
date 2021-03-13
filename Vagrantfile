@@ -32,7 +32,7 @@ Vagrant.configure("2") do |config|
         db_conf.vm.hostname = "db#{i}"
         db_conf.vm.network :private_network, ip: "192.168.180.5#{i}"
         db_conf.vm.provider "vmware_workstation" do |vb|
-          vb.vmx["memsize"] = 2048
+          vb.vmx["memsize"] = 2304
           vb.vmx["ethernet1.vnet"] = "/dev/vmnet8"
         end
     end

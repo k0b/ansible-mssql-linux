@@ -3,20 +3,20 @@
   hosts: db
   become: yes
 
+  vars:
+    edition: "Developer"
+    db_password: "Vagrant@123"
+
   tasks:
   - name: Create MSSQL Server 2019 repository
     uri:
       url: https://packages.microsoft.com/config/rhel/8/mssql-server-2019.repo
       dest: /etc/yum.repos.d/mssql-server.repo
 
-  - name: Check if the repo was created
-    stat:
-      path: /etc/yum.repos.d/mssql-server.repo
-    register: stat_result
-
-  - name: cat file 
-    shell:
-      cmd: "cat /etc/yum.repos.d/mssql-server.repo"
+  - name: Create mssql-tool repo
+    uri:
+      url: https://packages.microsoft.com/config/rhel/8/prod.repo
+      dest: /etc/yum.repos.d/msprod.repo
 
   - name: Update CentOS
     dnf:
@@ -27,5 +27,41 @@
     dnf:
       name: mssql-server
       state: latest
-      
+
+  - name: Remove previous versions of mssql-tools, if any
+    dnf:
+      name: 
+        - unixODBC-utf16
+        - unixODBC-utf16-devel
+      state: absent
+
+  - name: Install mssql-tools 
+    shell: ACCEPT_EULA=Y dnf install mssql-tools unixODBC-devel -y
+
+  - name: Add mssql-tools to .bashrc
+    lineinfile:
+      dest: "/home/vagrant/.bashrc"
+      state: present
+      line: 'export PATH="$PATH:/opt/mssql-tools/bin"'
+
+  - name: Stop any existing MSSQL Server
+    service:
+      name: mssql-server
+      state: stopped
+
+  - name: Run MSSQL Server setup script
+    shell:
+      cmd: MSSQL_PID="{{edition}}" MSSQL_SA_PASSWORD="{{db_password}}" /opt/mssql/bin/mssql-conf -n setup accept-eula
+    register: setup_output
+    failed_when: "'Setup has completed successfully. SQL Server is now starting.' not in setup_output.stdout"
+
+  - name: Run version query
+    shell:
+      cmd: sqlcmd -S localhost -U SA -P Vagrant@123 -Q 'SELECT @@VERSION'
+    register: query_output
+
+  - name: Output of query
+    debug:
+      msg: "{{ query_output.stdout }}"
 ...
+
