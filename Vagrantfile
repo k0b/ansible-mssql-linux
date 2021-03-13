@@ -15,7 +15,7 @@ Vagrant.configure("2") do |config|
   config.vm.define :mgmt do |mgmt_conf|
       mgmt_conf.vm.box = "generic/centos8"
       mgmt_conf.vm.hostname = "mgmt"
-      mgmt_conf.vm.network :private_network, ip: "192.168.180.10"
+      mgmt_conf.vm.network :private_network, ip: "192.168.180.5"
       mgmt_conf.vm.synced_folder ".", "/vagrant", disabled: false
       mgmt_conf.vm.provider "vmware_workstation" do |vb|
         vb.vmx["memsize"] = 1024
@@ -30,7 +30,7 @@ Vagrant.configure("2") do |config|
     config.vm.define "db#{i}" do |db_conf|
         db_conf.vm.box = "generic/centos8"
         db_conf.vm.hostname = "db#{i}"
-        db_conf.vm.network :private_network, ip: "192.168.180.3#{i}"
+        db_conf.vm.network :private_network, ip: "192.168.180.5#{i}"
         db_conf.vm.provider "vmware_workstation" do |vb|
           vb.vmx["memsize"] = 2048
           vb.vmx["ethernet1.vnet"] = "/dev/vmnet8"

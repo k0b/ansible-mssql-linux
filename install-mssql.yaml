@@ -1,0 +1,31 @@
+---
+- name: Install MSSQL Server 2019 on CentOS 8
+  hosts: db
+  become: yes
+
+  tasks:
+  - name: Create MSSQL Server 2019 repository
+    uri:
+      url: https://packages.microsoft.com/config/rhel/8/mssql-server-2019.repo
+      dest: /etc/yum.repos.d/mssql-server.repo
+
+  - name: Check if the repo was created
+    stat:
+      path: /etc/yum.repos.d/mssql-server.repo
+    register: stat_result
+
+  - name: cat file 
+    shell:
+      cmd: "cat /etc/yum.repos.d/mssql-server.repo"
+
+  - name: Update CentOS
+    dnf:
+      name: "*"
+      state: latest
+
+  - name: Install MSSQL Server 2019
+    dnf:
+      name: mssql-server
+      state: latest
+      
+...
