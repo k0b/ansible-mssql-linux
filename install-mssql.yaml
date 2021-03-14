@@ -55,6 +55,10 @@
     register: setup_output
     failed_when: "'Setup has completed successfully. SQL Server is now starting.' not in setup_output.stdout"
 
+  - name: Check MSSQL setup output
+    debug:
+      msg: "{{ setup_output.stdout }}"
+
   - name: Run version query
     shell:
       cmd: sqlcmd -S localhost -U SA -P Vagrant@123 -Q 'SELECT @@VERSION'
@@ -63,5 +67,18 @@
   - name: Output of query
     debug:
       msg: "{{ query_output.stdout }}"
+
+  - name: Add mssql firewall port
+    firewalld:
+      zone: public
+      port: 1433/tcp
+      permanent: true
+      state: enabled
+
+  - name: Restart firewalld service 
+    service:
+      name: firewalld
+      state: restarted
+
 ...
 

@@ -1,0 +1,37 @@
+---
+- name: PLAYBOOK to install HighAvailability
+  hosts: db
+  become: yes
+
+  tasks:
+
+  - name: Enable HighAvailability repo
+    dnf:
+      name:
+        - pacemaker
+        - pcs
+        - resource-agents
+        - mssql-server-ha
+        - fence-agents-all
+      enablerepo: ha
+      state: latest
+
+  - name: Enable MSSQL HA
+    shell:
+      cmd: /opt/mssql/bin/mssql-conf set hadr.hadrenabled 1
+    register: enable_ha_output
+
+  - name: Check status of command
+    debug:
+      msg: "{{ enable_ha_output.stdout }}"
+
+  - name: Restart MSSQL Server
+    service:
+      name: mssql-server
+      state: restarted
+      
+  - name: T-SQL to enable Always On Health check
+    shell:
+      cmd: sqlcmd -S localhost -U SA -P Vagrant@123 -Q 'ALTER EVENT SESSION AlwaysOn_health ON SERVER WITH (STARTUP_STATE=ON)'
+    register: query_output
+...
