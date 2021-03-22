@@ -80,5 +80,11 @@
       name: firewalld
       state: restarted
 
+  - name: Copy T-SQL scripts
+    copy:
+      src: files/
+      dest: /tmp/
+      directory_mode: yes
+
 ...
 

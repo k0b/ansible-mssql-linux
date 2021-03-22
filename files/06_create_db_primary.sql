@@ -1,0 +1,6 @@
+CREATE DATABASE [db1];
+ALTER DATABASE [db1] SET RECOVERY FULL;
+BACKUP DATABASE [db1] TO DISK = N'/var/opt/mssql/data/db1.bak';
+BACKUP LOG [db1] TO DISK = N'/var/opt/mssql/data/db1.trn';
+GO 
+ALTER AVAILABILITY GROUP [ag1] ADD DATABASE [db1];

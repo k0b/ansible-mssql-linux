@@ -9,4 +9,3 @@ WITH PRIVATE KEY (
     FILE = '/var/opt/mssql/data/dbm_certificate.pvk',
     ENCRYPTION BY PASSWORD = 'Vagrant@123'
 );
-
