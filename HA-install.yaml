@@ -38,4 +38,13 @@
   - name: Check the query output.
     debug:
       msg: "{{ query_output.stdout }}"
+
+  - name: Create certificate using sqlcmd script.
+    shell:
+      cmd: /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P Vagrant@123 -i /tmp/01_cert.sql
+    register: gen_cert
+
+  - name: Check output of created cert.
+    debug:
+      msg: "{{ gen_cert.stdout }}"
 ...
