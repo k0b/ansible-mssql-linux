@@ -6,7 +6,7 @@
   tasks:
 
   - name: Enable HighAvailability repo
-    dnf:
+    yum:
       name:
         - pacemaker
         - pcs
@@ -32,6 +32,10 @@
       
   - name: T-SQL to enable Always On Health check
     shell:
-      cmd: sqlcmd -S localhost -U SA -P Vagrant@123 -Q 'ALTER EVENT SESSION AlwaysOn_health ON SERVER WITH (STARTUP_STATE=ON)'
+      cmd: /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P Vagrant@123 -Q 'ALTER EVENT SESSION AlwaysOn_health ON SERVER WITH (STARTUP_STATE=ON)'
     register: query_output
+
+  - name: Check the query output.
+    debug:
+      msg: "{{ query_output.stdout }}"
 ...

@@ -7,6 +7,12 @@
     edition: "Developer"
     db_password: "Vagrant@123"
 
+  handlers:
+  - name: restart firewalld
+    service:
+      name: firewalld
+      state: restarted
+
   tasks:
   - name: Create MSSQL Server 2019 repository
     uri:
@@ -19,30 +25,42 @@
       dest: /etc/yum.repos.d/msprod.repo
 
   - name: Update CentOS
-    dnf:
+    yum:
       name: "*"
       state: latest
 
+  - name: Generate /etc/hosts file.
+    lineinfile:
+      dest: /etc/hosts
+      regexp: '.*{{ item }}$'
+      line: '{{ hostvars[item].ansible_default_ipv4.address }} {{ item }}'
+      state: present
+    with_items:
+      - '{{ groups["db"] }}'
+
   - name: Install MSSQL Server 2019
-    dnf:
+    yum:
       name: mssql-server
       state: latest
 
   - name: Remove previous versions of mssql-tools, if any
-    dnf:
+    yum:
       name: 
         - unixODBC-utf16
         - unixODBC-utf16-devel
       state: absent
 
   - name: Install mssql-tools 
-    shell: ACCEPT_EULA=Y dnf install mssql-tools unixODBC-devel -y
+    shell: ACCEPT_EULA=Y yum install mssql-tools unixODBC-devel -y
 
   - name: Add mssql-tools to .bashrc
     lineinfile:
-      dest: "/home/vagrant/.bashrc"
+      dest: "{{ item }}"
       state: present
       line: 'export PATH="$PATH:/opt/mssql-tools/bin"'
+    with_items:
+      - "/home/vagrant/.bashrc"
+      - "/root/.bashrc"
 
   - name: Stop any existing MSSQL Server
     service:
@@ -61,7 +79,7 @@
 
   - name: Run version query
     shell:
-      cmd: sqlcmd -S localhost -U SA -P Vagrant@123 -Q 'SELECT @@VERSION'
+      cmd: /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P Vagrant@123 -Q 'SELECT @@VERSION'
     register: query_output
 
   - name: Output of query
@@ -74,11 +92,7 @@
       port: 1433/tcp
       permanent: true
       state: enabled
-
-  - name: Restart firewalld service 
-    service:
-      name: firewalld
-      state: restarted
+    notify: restart firewalld
 
   - name: Copy T-SQL scripts
     copy:
