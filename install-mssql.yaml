@@ -38,6 +38,14 @@
     with_items:
       - '{{ groups["db"] }}'
 
+  - name: Add ag-listener ip to hosts.
+    lineinfile:
+      dest: /etc/hosts
+      regexp: '^::1 '
+      insertafter: '^::1 '
+      line: '172.16.42.222 ag1-listener'
+      state: present 
+
   - name: Install MSSQL Server 2019
     yum:
       name: mssql-server
@@ -89,9 +97,12 @@
   - name: Add mssql firewall port
     firewalld:
       zone: public
-      port: 1433/tcp
+      port: "{{ item }}"
       permanent: true
       state: enabled
+    with_items:
+      - 1433/tcp
+      - 5022/tcp
     notify: restart firewalld
 
   - name: Copy T-SQL scripts

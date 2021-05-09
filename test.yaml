@@ -1,0 +1,17 @@
+---
+- name: PLAYBOOK to install HighAvailability
+  hosts: db
+  become: yes
+
+  tasks:
+
+  - name: Copy certyficates onto mssql nodes.
+    copy:
+      src: "/tmp/{{ item }}"
+      dest: "/var/opt/mssql/data/{{ item }}"
+      owner: mssql
+      group: mssql
+      mode: '0640'
+    with_items:
+      - "dbm_certificate.cer"
+      - "dbm_certificate.pvk"

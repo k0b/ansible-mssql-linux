@@ -13,6 +13,7 @@
         - resource-agents
         - mssql-server-ha
         - fence-agents-all
+        - rsync
       enablerepo: ha
       state: latest
 
@@ -43,8 +44,103 @@
     shell:
       cmd: /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P Vagrant@123 -i /tmp/01_cert.sql
     register: gen_cert
+    delegate_to: db1
+    run_once: True
 
   - name: Check output of created cert.
     debug:
       msg: "{{ gen_cert.stdout }}"
+
+#  - name: Copy certs from db1 to rest of the node.
+#    synchronize:
+#      src: "{{ item }}"
+#      dest: /var/opt/mssql/data/
+#      owner: True
+#      group: True
+#    with_items:
+#      - "/var/opt/mssql/data/dbm_certificate.cer"
+#      - "/var/opt/mssql/data/dbm_certificate.pvk"
+#    delegate_to: db1
+
+  - name: Fetch certs from db1 onto mgmt control host.
+    fetch:
+      src: "{{ item }}"
+      dest: /tmp/
+      flat: yes
+      ignore_errors: True
+    with_items:
+      - "/var/opt/mssql/data/dbm_certificate.cer"
+      - "/var/opt/mssql/data/dbm_certificate.pvk"
+- hosts: db
+  tasks:
+
+  - name: Copy certyficates onto mssql nodes.
+    copy:
+      src: "/tmp/{{ item }}"
+      dest: "/var/opt/mssql/data/{{ item }}"
+      owner: mssql
+      group: mssql
+      mode: '0640'
+    with_items:
+      - "dbm_certificate.cer"
+      - "dbm_certificate.pvk"
+
+  - name: Create certificate using sqlcmd script.
+    shell:
+      cmd: /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P Vagrant@123 -i /tmp/02_cert-on-rest.sql
+    register: gen_cert_rest
+      
+  - name: Output of the cert generation on rest.
+    debug:
+      msg : "{{ gen_cert_rest }}"
+
+  - name: Create endpoints on all servers.
+    shell:
+      cmd: /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P Vagrant@123 -i /tmp/03_endpoints.sql
+    register: end_points
+
+  - name: Output of endpoints script.
+    debug:
+      msg: "{{ end_points }}"
+      
+  - name: Create replica on primary.
+    shell:
+      cmd: /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P Vagrant@123 -i /tmp/04_create_replica_on_primary.sql
+    register: replica_on_primary
+    delegate_to: db1
+
+  - name: Output of replica on primary.
+    debug:
+      msg: "{{ replica_on_primary }}"
+
+- hosts: db2,db3
+  tasks:
+
+  - name: Join the AG group.
+    shell:
+      cmd: /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P Vagrant@123 -i /tmp/05_join_secondary.sql
+    register: join_ag
+
+  - name: Outpu of joining AG.
+    debug:
+      msg: "{{ join_ag }}"
+
+- hosts: db1
+  become: True
+
+  tasks:
+  - name: Create DB on primary db1.
+    shell:
+      cmd: /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P Vagrant@123 -i /tmp/06_create_db_primary.sql
+    register: create_db_pri
+
+  - name: Outpu of joining AG.
+    debug:
+      msg: "{{ create_db_pri }}"
+
+    
+
+
+
+
 ...
